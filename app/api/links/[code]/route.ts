@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
 import { dbGet, dbDelete, dbRecordClick } from '@/lib/db';
 
 type Params = { params: Promise<{ code: string }> };
@@ -18,7 +19,16 @@ export async function POST(_: NextRequest, { params }: Params) {
 }
 
 export async function DELETE(_: NextRequest, { params }: Params) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+
   const { code } = await params;
-  await dbDelete(code);
+  const link = await dbGet(code);
+
+  if (!link || link.userId !== userId) {
+    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+  }
+
+  await dbDelete(code, userId);
   return NextResponse.json({ ok: true });
 }
