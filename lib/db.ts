@@ -60,7 +60,7 @@ export async function dbGet(code: string): Promise<ShortLink | null> {
 export async function dbSave(link: ShortLink): Promise<void> {
   const redis = getRedis();
   if (redis) {
-    await redis.set(`link:${link.shortCode}`, JSON.stringify(link));
+    await redis.set(`link:${link.shortCode}`, link);
     await redis.sadd('links', link.shortCode);
     return;
   }
