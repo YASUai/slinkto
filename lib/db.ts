@@ -1,13 +1,28 @@
 /**
  * Storage abstraction:
- * - Local dev  : data/links.json (fichier)
- * - Production : Upstash Redis   (quand KV_REST_API_URL est défini)
+ * - Local dev  : data/links.json
+ * - Production : Upstash Redis (KV_REST_API_URL + KV_REST_API_TOKEN)
  */
+
+import { Redis } from '@upstash/redis';
 import { ShortLink } from './types';
 import fs from 'fs';
 import path from 'path';
 
-// ─── File storage (dev) ──────────────────────────────────────────────────────
+// ─── Redis client ─────────────────────────────────────────────────────────────
+
+let _redis: Redis | null = null;
+
+function getRedis(): Redis | null {
+  if (_redis) return _redis;
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  _redis = new Redis({ url, token });
+  return _redis;
+}
+
+// ─── File storage (dev fallback) ──────────────────────────────────────────────
 
 const DATA_FILE = path.join(process.cwd(), 'data', 'links.json');
 
@@ -28,32 +43,26 @@ function writeFile(data: Record<string, ShortLink>) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// ─── Redis client (production) ───────────────────────────────────────────────
-
-function getRedis() {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  const { Redis } = require('@upstash/redis');
-  return new Redis({ url, token });
-}
-
-// ─── Public API ──────────────────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function dbGetAll(): Promise<ShortLink[]> {
   const redis = getRedis();
   if (redis) {
-    const codes: string[] = await redis.smembers('links') ?? [];
+    const codes = (await redis.smembers('links')) as string[];
     if (!codes.length) return [];
-    const links = await Promise.all(codes.map((c: string) => redis.get<ShortLink>(`link:${c}`)));
-    return (links.filter(Boolean) as ShortLink[]).sort((a, b) => b.createdAt - a.createdAt);
+    const links = await Promise.all(
+      codes.map((c) => redis.get(`link:${c}`) as Promise<ShortLink | null>)
+    );
+    return (links.filter(Boolean) as ShortLink[]).sort(
+      (a, b) => b.createdAt - a.createdAt
+    );
   }
   return Object.values(readFile()).sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export async function dbGet(code: string): Promise<ShortLink | null> {
   const redis = getRedis();
-  if (redis) return redis.get<ShortLink>(`link:${code}`);
+  if (redis) return redis.get(`link:${code}`) as Promise<ShortLink | null>;
   return readFile()[code] ?? null;
 }
 
@@ -81,7 +90,10 @@ export async function dbDelete(code: string): Promise<void> {
   writeFile(data);
 }
 
-export async function dbRecordClick(code: string, referer?: string): Promise<void> {
+export async function dbRecordClick(
+  code: string,
+  referer?: string
+): Promise<void> {
   const link = await dbGet(code);
   if (!link) return;
   link.clicks.push({ timestamp: Date.now(), referer });
