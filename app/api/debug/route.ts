@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Redis } from '@upstash/redis';
 
 export async function GET() {
   const url = process.env.KV_REST_API_URL;
@@ -7,31 +8,51 @@ export async function GET() {
   const info: Record<string, unknown> = {
     hasUrl: !!url,
     hasToken: !!token,
-    urlPrefix: url ? url.substring(0, 30) + '...' : null,
   };
 
-  if (url && token) {
-    try {
-      const { Redis } = require('@upstash/redis');
-      const redis = new Redis({ url, token });
-
-      // Test ping
-      const ping = await redis.ping();
-      info.ping = ping;
-
-      // Test set/get
-      await redis.set('debug:test', { hello: 'world', ts: Date.now() });
-      const val = await redis.get('debug:test');
-      info.testValue = val;
-
-      // List all link keys
-      const members = await redis.smembers('links');
-      info.linkCodes = members;
-
-    } catch (e: unknown) {
-      info.error = e instanceof Error ? e.message : String(e);
-    }
+  if (!url || !token) {
+    return NextResponse.json({ ...info, error: 'Missing env vars' });
   }
 
-  return NextResponse.json(info);
+  try {
+    const redis = new Redis({ url, token });
+
+    // Ping
+    info.ping = await redis.ping();
+
+    // Liste tous les codes
+    const codes = (await redis.smembers('links')) as string[];
+    info.linkCodes = codes;
+
+    // Récupère le contenu brut de chaque lien
+    const rawLinks: Record<string, unknown> = {};
+    for (const code of codes.slice(0, 5)) {
+      const raw = await redis.get(`link:${code}`);
+      rawLinks[code] = raw;
+    }
+    info.rawLinks = rawLinks;
+
+    // Test: sauvegarde un lien de test et le relit immédiatement
+    const testCode = 'TEST01';
+    const testLink = {
+      id: 'test-id',
+      shortCode: testCode,
+      originalUrl: 'https://google.com',
+      createdAt: Date.now(),
+      clicks: [],
+    };
+    await redis.set(`link:${testCode}`, testLink);
+    await redis.sadd('links', testCode);
+    const retrieved = await redis.get(`link:${testCode}`);
+    info.testSaveRetrieve = {
+      saved: testLink,
+      retrieved,
+      match: JSON.stringify(retrieved) === JSON.stringify(testLink),
+    };
+
+  } catch (e: unknown) {
+    info.error = e instanceof Error ? e.message : String(e);
+  }
+
+  return NextResponse.json(info, { status: 200 });
 }
