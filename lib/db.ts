@@ -1,7 +1,7 @@
 /**
  * Storage abstraction:
  * - Local dev  : data/links.json (fichier)
- * - Production : Vercel KV      (quand KV_REST_API_URL est défini)
+ * - Production : Upstash Redis   (quand KV_REST_API_URL est défini)
  */
 import { ShortLink } from './types';
 import fs from 'fs';
@@ -28,38 +28,40 @@ function writeFile(data: Record<string, ShortLink>) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 }
 
-// ─── KV storage (production) ─────────────────────────────────────────────────
+// ─── Redis client (production) ───────────────────────────────────────────────
 
-function isKV(): boolean {
-  return !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+function getRedis() {
+  const url = process.env.KV_REST_API_URL;
+  const token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  const { Redis } = require('@upstash/redis');
+  return new Redis({ url, token });
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export async function dbGetAll(): Promise<ShortLink[]> {
-  if (isKV()) {
-    const { kv } = await import('@vercel/kv');
-    const codes = await kv.smembers<string[]>('links');
+  const redis = getRedis();
+  if (redis) {
+    const codes: string[] = await redis.smembers('links') ?? [];
     if (!codes.length) return [];
-    const links = await Promise.all(codes.map(c => kv.get<ShortLink>(`link:${c}`)));
+    const links = await Promise.all(codes.map((c: string) => redis.get<ShortLink>(`link:${c}`)));
     return (links.filter(Boolean) as ShortLink[]).sort((a, b) => b.createdAt - a.createdAt);
   }
   return Object.values(readFile()).sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export async function dbGet(code: string): Promise<ShortLink | null> {
-  if (isKV()) {
-    const { kv } = await import('@vercel/kv');
-    return kv.get<ShortLink>(`link:${code}`);
-  }
+  const redis = getRedis();
+  if (redis) return redis.get<ShortLink>(`link:${code}`);
   return readFile()[code] ?? null;
 }
 
 export async function dbSave(link: ShortLink): Promise<void> {
-  if (isKV()) {
-    const { kv } = await import('@vercel/kv');
-    await kv.set(`link:${link.shortCode}`, link);
-    await kv.sadd('links', link.shortCode);
+  const redis = getRedis();
+  if (redis) {
+    await redis.set(`link:${link.shortCode}`, JSON.stringify(link));
+    await redis.sadd('links', link.shortCode);
     return;
   }
   const data = readFile();
@@ -68,10 +70,10 @@ export async function dbSave(link: ShortLink): Promise<void> {
 }
 
 export async function dbDelete(code: string): Promise<void> {
-  if (isKV()) {
-    const { kv } = await import('@vercel/kv');
-    await kv.del(`link:${code}`);
-    await kv.srem('links', code);
+  const redis = getRedis();
+  if (redis) {
+    await redis.del(`link:${code}`);
+    await redis.srem('links', code);
     return;
   }
   const data = readFile();
