@@ -3,12 +3,11 @@ import { ShortLink, ClickEvent } from './types';
 const PROD_DOMAIN = 'slnko.me';
 
 export function getBaseUrl(): string {
-  if (typeof window === 'undefined') return `https://${PROD_DOMAIN}`;
+  if (typeof window === 'undefined') return `https://www.${PROD_DOMAIN}`;
   const { hostname, origin } = window.location;
   if (hostname === 'localhost' || hostname === '127.0.0.1') return origin;
-  if (hostname === PROD_DOMAIN) return `https://${PROD_DOMAIN}`;
-  // Sur Vercel preview (slinkto.vercel.app) ou autre domaine inconnu
-  return origin;
+  // En production, toujours utiliser www.slnko.me
+  return `https://www.${PROD_DOMAIN}`;
 }
 
 export function getShortUrl(shortCode: string): string {
