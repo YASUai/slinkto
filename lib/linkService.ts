@@ -5,7 +5,10 @@ const PROD_DOMAIN = 'slnko.me';
 export function getBaseUrl(): string {
   if (typeof window === 'undefined') return `https://${PROD_DOMAIN}`;
   const { hostname, origin } = window.location;
-  return hostname === 'localhost' || hostname === '127.0.0.1' ? origin : `https://${PROD_DOMAIN}`;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return origin;
+  if (hostname === PROD_DOMAIN) return `https://${PROD_DOMAIN}`;
+  // Sur Vercel preview (slinkto.vercel.app) ou autre domaine inconnu
+  return origin;
 }
 
 export function getShortUrl(shortCode: string): string {

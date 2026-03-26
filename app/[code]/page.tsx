@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation';
 import { dbGet, dbRecordClick } from '@/lib/db';
 
+// Pas de cache — chaque requête doit aller chercher le lien en temps réel
+export const dynamic = 'force-dynamic';
+
 export default async function RedirectPage({
   params,
 }: {
