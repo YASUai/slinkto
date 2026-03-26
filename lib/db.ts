@@ -2,6 +2,10 @@
  * Storage abstraction:
  * - Local dev  : data/links.json
  * - Production : Upstash Redis (KV_REST_API_URL + KV_REST_API_TOKEN)
+ *
+ * Structure Redis :
+ *   link:{shortCode}          → ShortLink object
+ *   userlinks:{userId}        → Set of shortCodes appartenant à l'utilisateur
  */
 
 import { Redis } from '@upstash/redis';
@@ -45,10 +49,11 @@ function writeFile(data: Record<string, ShortLink>) {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-export async function dbGetAll(): Promise<ShortLink[]> {
+/** Récupère tous les liens d'un utilisateur */
+export async function dbGetAll(userId: string): Promise<ShortLink[]> {
   const redis = getRedis();
   if (redis) {
-    const codes = (await redis.smembers('links')) as string[];
+    const codes = (await redis.smembers(`userlinks:${userId}`)) as string[];
     if (!codes.length) return [];
     const links = await Promise.all(
       codes.map((c) => redis.get(`link:${c}`) as Promise<ShortLink | null>)
@@ -57,20 +62,24 @@ export async function dbGetAll(): Promise<ShortLink[]> {
       (a, b) => b.createdAt - a.createdAt
     );
   }
-  return Object.values(readFile()).sort((a, b) => b.createdAt - a.createdAt);
+  return Object.values(readFile())
+    .filter((l) => l.userId === userId)
+    .sort((a, b) => b.createdAt - a.createdAt);
 }
 
+/** Récupère un lien par son code court (public — pour la redirection) */
 export async function dbGet(code: string): Promise<ShortLink | null> {
   const redis = getRedis();
   if (redis) return redis.get(`link:${code}`) as Promise<ShortLink | null>;
   return readFile()[code] ?? null;
 }
 
+/** Sauvegarde un lien */
 export async function dbSave(link: ShortLink): Promise<void> {
   const redis = getRedis();
   if (redis) {
     await redis.set(`link:${link.shortCode}`, link);
-    await redis.sadd('links', link.shortCode);
+    await redis.sadd(`userlinks:${link.userId}`, link.shortCode);
     return;
   }
   const data = readFile();
@@ -78,11 +87,12 @@ export async function dbSave(link: ShortLink): Promise<void> {
   writeFile(data);
 }
 
-export async function dbDelete(code: string): Promise<void> {
+/** Supprime un lien */
+export async function dbDelete(code: string, userId: string): Promise<void> {
   const redis = getRedis();
   if (redis) {
     await redis.del(`link:${code}`);
-    await redis.srem('links', code);
+    await redis.srem(`userlinks:${userId}`, code);
     return;
   }
   const data = readFile();
@@ -90,6 +100,7 @@ export async function dbDelete(code: string): Promise<void> {
   writeFile(data);
 }
 
+/** Enregistre un clic */
 export async function dbRecordClick(
   code: string,
   referer?: string

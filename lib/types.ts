@@ -9,4 +9,5 @@ export interface ShortLink {
   originalUrl: string;
   createdAt: number;
   clicks: ClickEvent[];
+  userId: string; // propriétaire du lien
 }
