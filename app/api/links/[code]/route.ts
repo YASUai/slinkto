@@ -7,7 +7,7 @@ type Params = { params: Promise<{ code: string }> };
 export async function GET(_: NextRequest, { params }: Params) {
   const { code } = await params;
   const link = await dbGet(code);
-  if (!link) return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
+  if (!link) return NextResponse.json({ error: 'Not found' }, { status: 404 });
   return NextResponse.json(link);
 }
 
@@ -20,13 +20,13 @@ export async function POST(_: NextRequest, { params }: Params) {
 
 export async function DELETE(_: NextRequest, { params }: Params) {
   const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 });
+  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { code } = await params;
   const link = await dbGet(code);
 
   if (!link || link.userId !== userId) {
-    return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
   await dbDelete(code, userId);

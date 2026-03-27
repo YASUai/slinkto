@@ -50,9 +50,9 @@ export default function Dashboard() {
   async function handleShorten() {
     setError('');
     const trimmed = url.trim();
-    if (!trimmed) { setError('Entrez une URL'); return; }
+    if (!trimmed) { setError('Enter a URL'); return; }
     const withProtocol = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
-    if (!isValidUrl(withProtocol)) { setError('URL invalide'); return; }
+    if (!isValidUrl(withProtocol)) { setError('Invalid URL'); return; }
 
     setLoading(true);
     try {
@@ -68,7 +68,7 @@ export default function Dashboard() {
       await loadLinks();
       setUrl('');
     } catch {
-      setError('Erreur lors de la création du lien');
+      setError('Failed to create link');
     } finally {
       setLoading(false);
     }
@@ -120,20 +120,20 @@ export default function Dashboard() {
         {/* Input card */}
         <div className="glass-card p-5 mb-4">
           <label className="block text-xs font-medium mb-2" style={{ color: '#9ca3af' }}>
-            RACCOURCIR UN LIEN
+            SHORTEN A LINK
           </label>
           <div className="flex flex-col gap-3">
             <input
               className="glass-input"
               type="url"
-              placeholder="https://votre-url-longue.com/..."
+              placeholder="https://your-long-url.com/..."
               value={url}
               onChange={e => { setUrl(e.target.value); setError(''); }}
               onKeyDown={e => e.key === 'Enter' && handleShorten()}
             />
             {error && <p className="text-xs" style={{ color: '#FF6B6B' }}>{error}</p>}
             <button className="btn-accent" onClick={handleShorten} disabled={loading}>
-              {loading ? 'Génération…' : 'RACCOURCIR'}
+              {loading ? 'Generating…' : 'SHORTEN'}
             </button>
           </div>
         </div>
@@ -149,7 +149,7 @@ export default function Dashboard() {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>Lien raccourci</p>
+                <p className="text-xs mb-1" style={{ color: '#9ca3af' }}>Short link</p>
                 <p className="font-bold text-sm truncate" style={{ color: '#E53935' }}>
                   {getDisplayUrl(generated.shortCode)}
                 </p>
@@ -166,7 +166,7 @@ export default function Dashboard() {
                   <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
                   <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
                 </svg>
-                {copied ? 'Copié !' : 'Copier'}
+                {copied ? 'Copied!' : 'Copy'}
               </button>
               <button className="btn-secondary flex-1 justify-center"
                 onClick={() => navigator.share?.({ url: getShortUrl(generated.shortCode), title: 'Slinkto' })}>
@@ -175,7 +175,7 @@ export default function Dashboard() {
                   <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
                   <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                 </svg>
-                Partager
+                Share
               </button>
             </div>
           </div>
@@ -184,25 +184,25 @@ export default function Dashboard() {
         {/* Stats + Chart */}
         {links.length > 0 && (
           <div className="glass-card p-5 mb-4">
-            <p className="text-xs font-medium mb-4" style={{ color: '#9ca3af' }}>STATISTIQUES</p>
+            <p className="text-xs font-medium mb-4" style={{ color: '#9ca3af' }}>STATISTICS</p>
             <WeekChart data={weekData} />
             <div className="flex gap-3 mt-4">
               <div className="flex-1 text-center p-3 rounded-xl"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <p className="text-xl font-bold">{totalClicks}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>Clics</p>
+                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>Clicks</p>
               </div>
               <div className="flex-1 text-center p-3 rounded-xl"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <p className="text-xl font-bold">{links.length}</p>
-                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>Liens</p>
+                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>Links</p>
               </div>
               <div className="flex-1 text-center p-3 rounded-xl"
                 style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <p className="text-xl font-bold">
                   {links.length > 0 ? Math.round(totalClicks / links.length * 10) / 10 : 0}
                 </p>
-                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>Moy/lien</p>
+                <p className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>Avg/link</p>
               </div>
             </div>
           </div>
@@ -211,7 +211,7 @@ export default function Dashboard() {
         {/* Recent links */}
         {recentLinks.length > 0 && (
           <div className="glass-card p-5">
-            <p className="text-xs font-medium mb-4" style={{ color: '#9ca3af' }}>LIENS RÉCENTS</p>
+            <p className="text-xs font-medium mb-4" style={{ color: '#9ca3af' }}>RECENT LINKS</p>
             <div className="flex flex-col gap-3">
               {recentLinks.map(link => (
                 <div key={link.id} className="flex items-center gap-3 group">
@@ -243,7 +243,7 @@ export default function Dashboard() {
                       onClick={() => handleDelete(link.shortCode)}
                       className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center rounded"
                       style={{ color: '#6b7280' }}
-                      title="Supprimer">
+                      title="Delete">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                       </svg>
@@ -263,7 +263,7 @@ export default function Dashboard() {
               <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
                 stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <p className="text-sm">Raccourcissez votre premier lien</p>
+            <p className="text-sm">Shorten your first link</p>
           </div>
         )}
       </div>

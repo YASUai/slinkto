@@ -29,12 +29,12 @@ export default async function RedirectPage({
             <line x1="6" y1="6" x2="18" y2="18" stroke="#E53935" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold mb-2">Lien introuvable</h1>
+        <h1 className="text-xl font-bold mb-2">Link not found</h1>
         <p className="text-sm mb-6" style={{ color: '#9ca3af' }}>
-          Ce lien n&apos;existe pas ou a été supprimé.
+          This link doesn&apos;t exist or has been deleted.
         </p>
         <a href="/" className="btn-accent block">
-          Créer un lien
+          Create a link
         </a>
       </div>
     </div>

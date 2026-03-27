@@ -1,13 +1,13 @@
 'use client';
 
-const DAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export default function WeekChart({ data }: { data: number[] }) {
   const max = Math.max(...data, 1);
 
   return (
     <div className="rounded-xl p-3" style={{ background: 'rgba(0,0,0,0.3)' }}>
-      <p className="text-xs mb-3" style={{ color: '#6b7280' }}>Clics cette semaine</p>
+      <p className="text-xs mb-3" style={{ color: '#6b7280' }}>Clicks this week</p>
       <div className="flex items-end gap-1.5 h-16">
         {data.map((val, i) => {
           const heightPct = (val / max) * 100;

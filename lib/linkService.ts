@@ -40,10 +40,10 @@ export function getClicksPerDay(links: ShortLink[], days = 7): number[] {
 export function getRelativeDate(timestamp: number): string {
   const diff = Date.now() - timestamp;
   const days = Math.floor(diff / 86_400_000);
-  if (days === 0) return "Aujourd'hui";
-  if (days === 1) return 'Hier';
-  if (days < 7) return `${days}j`;
-  if (days < 30) return `${Math.floor(days / 7)}sem`;
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d`;
+  if (days < 30) return `${Math.floor(days / 7)}w`;
   return `${Math.floor(days / 30)}mo`;
 }
 
