@@ -13,15 +13,17 @@ import { useAuth } from '@clerk/nextjs';
 import { useEffect, useRef } from 'react';
 
 export default function NativeCallback() {
-  const { userId, isLoaded } = useAuth();
+  // Clerk v7 compatible – useAuth() may or may not expose `isLoaded`
+  const auth = useAuth() as { userId?: string | null; isLoaded?: boolean };
   const ran = useRef(false);
 
   useEffect(() => {
-    if (!isLoaded || ran.current) return;
+    // If isLoaded is available (older API), wait for it; otherwise rely on userId being defined
+    if (auth.isLoaded === false || ran.current) return;
     ran.current = true;
 
-    if (!userId) {
-      // Not signed in – send the app back to sign-in without a ticket
+    if (!auth.userId) {
+      // Not signed in – send the app back without a ticket
       window.location.href = 'slinkto://auth-complete';
       return;
     }
@@ -39,7 +41,7 @@ export default function NativeCallback() {
       .catch(() => {
         window.location.href = 'slinkto://auth-complete';
       });
-  }, [isLoaded, userId]);
+  }, [auth.isLoaded, auth.userId]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

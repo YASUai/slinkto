@@ -12,14 +12,15 @@ import { useEffect, useRef } from 'react';
 import { Suspense } from 'react';
 
 function NativeSignInInner() {
-  const { signIn, isLoaded } = useSignIn();
+  // Clerk v7: useSignIn() does not return `isLoaded` – check signIn for readiness
+  const { signIn } = useSignIn() as { signIn: any };
   const { setActive } = useClerk();
   const searchParams = useSearchParams();
   const router = useRouter();
   const ran = useRef(false);
 
   useEffect(() => {
-    if (!isLoaded || !signIn || ran.current) return;
+    if (!signIn || ran.current) return;
     ran.current = true;
 
     const ticket = searchParams.get('ticket');
@@ -30,7 +31,7 @@ function NativeSignInInner() {
 
     signIn
       .create({ strategy: 'ticket', ticket })
-      .then(async result => {
+      .then(async (result: any) => {
         if (result.status === 'complete') {
           await setActive({ session: result.createdSessionId });
           router.push('/');
@@ -38,11 +39,11 @@ function NativeSignInInner() {
           router.push('/sign-in');
         }
       })
-      .catch(err => {
+      .catch((err: unknown) => {
         console.error('Ticket sign-in error:', err);
         router.push('/sign-in');
       });
-  }, [isLoaded, signIn, setActive, searchParams, router]);
+  }, [signIn, setActive, searchParams, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">
