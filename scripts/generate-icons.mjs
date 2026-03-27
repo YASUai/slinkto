@@ -59,24 +59,29 @@ async function main() {
     console.log(`  ✅  ${folder}/ic_launcher.png  (${size}×${size})`);
   }
 
-  // 2. mipmap-xxxhdpi : ic_launcher_foreground.png (Adaptive Icon)
-  //    Taille recommandée : 432×432 (108dp × 4x)  → on centre dans 432px
-  const fgSize  = 432;
-  const iconIn  = 280; // zone safe = ~65% de 432px
-  const padding = Math.round((fgSize - iconIn) / 2);
-
-  // on génère la foreground à 280px puis on l'étend avec du transparent
-  const fgCore = await toPng(svgFgBuf, iconIn);
-  const fgFull = await sharp({
-    create: { width: fgSize, height: fgSize, channels: 4, background: { r:0,g:0,b:0,alpha:0 } }
-  })
-    .composite([{ input: fgCore, top: padding, left: padding }])
-    .png()
-    .toBuffer();
-
-  const fgDir = join(RES, 'mipmap-xxxhdpi');
-  writeFileSync(join(fgDir, 'ic_launcher_foreground.png'), fgFull);
-  console.log(`\n  ✅  mipmap-xxxhdpi/ic_launcher_foreground.png  (${fgSize}×${fgSize})`);
+  // 2. ic_launcher_foreground.png dans TOUS les mipmap (Adaptive Icon Android 8+)
+  //    Canvas = 108dp × densité, icône centrée dans 72dp (zone safe = 72/108 = 66%)
+  console.log('');
+  const FG_SIZES = [
+    { folder: 'mipmap-mdpi',    canvas: 108 },
+    { folder: 'mipmap-hdpi',    canvas: 162 },
+    { folder: 'mipmap-xhdpi',   canvas: 216 },
+    { folder: 'mipmap-xxhdpi',  canvas: 324 },
+    { folder: 'mipmap-xxxhdpi', canvas: 432 },
+  ];
+  for (const { folder, canvas } of FG_SIZES) {
+    const iconSize = Math.round(canvas * (72 / 108)); // zone safe 72dp/108dp
+    const pad      = Math.round((canvas - iconSize) / 2);
+    const fgCore   = await toPng(svgFgBuf, iconSize);
+    const fgFull   = await sharp({
+      create: { width: canvas, height: canvas, channels: 4, background: { r:0, g:0, b:0, alpha:0 } }
+    })
+      .composite([{ input: fgCore, top: pad, left: pad }])
+      .png()
+      .toBuffer();
+    writeFileSync(join(RES, folder, 'ic_launcher_foreground.png'), fgFull);
+    console.log(`  ✅  ${folder}/ic_launcher_foreground.png  (${canvas}×${canvas})`);
+  }
 
   // 3. Assets export : Google Play (512px) + haute-rés (1024px)
   mkdirSync(join(ASSETS, 'export'), { recursive: true });
