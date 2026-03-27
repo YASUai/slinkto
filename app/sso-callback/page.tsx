@@ -13,8 +13,8 @@ function SSOCallbackInner() {
 
   useEffect(() => {
     handleRedirectCallback({
-      afterSignInUrl: '/',
-      afterSignUpUrl: '/',
+      signInForceRedirectUrl: '/',
+      signUpForceRedirectUrl: '/',
     }).then(() => {
       if (isNative) {
         // Redirect to custom scheme to signal the native app
