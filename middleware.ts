@@ -1,9 +1,12 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-// Routes publiques : page de redirection + sign-in/up + debug
+// Routes publiques : page de redirection + sign-in/up + debug + native OAuth
 const isPublicRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
+  '/sso-callback(.*)',
+  '/native-callback(.*)',  // Chrome Custom Tabs post-OAuth page
+  '/native-signin(.*)',    // WebView ticket-consumption page
   '/api/debug(.*)',
   '/:code',          // redirection publique
 ]);

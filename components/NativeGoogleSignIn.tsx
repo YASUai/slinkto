@@ -1,26 +1,33 @@
 'use client';
 
-import { useSignIn } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function NativeGoogleSignIn() {
-  const { signIn, isLoaded } = useSignIn();
   const router = useRouter();
 
   useEffect(() => {
-    // Listen for the app being reopened via slinkto:// deep link
     let listener: { remove: () => void } | null = null;
 
     import('@capacitor/app').then(({ App }) => {
       App.addListener('appUrlOpen', async (data: { url: string }) => {
-        if (data.url.startsWith('slinkto://')) {
+        if (data.url.startsWith('slinkto://auth-complete')) {
           try {
             const { Browser } = await import('@capacitor/browser');
             await Browser.close();
           } catch {}
-          router.push('/');
-          router.refresh();
+
+          // Extract the one-time sign-in ticket from the deep link
+          const urlObj = new URL(data.url.replace('slinkto://', 'https://x.x/'));
+          const ticket = urlObj.searchParams.get('ticket');
+
+          if (ticket) {
+            // Navigate WebView to the page that will consume the ticket
+            window.location.href = `/native-signin?ticket=${encodeURIComponent(ticket)}`;
+          } else {
+            router.push('/');
+            router.refresh();
+          }
         }
       }).then(l => { listener = l; });
     }).catch(() => {});
@@ -29,20 +36,17 @@ export default function NativeGoogleSignIn() {
   }, [router]);
 
   async function handleGoogleSignIn() {
-    if (!isLoaded || !signIn) return;
     try {
-      const result = await signIn.create({
-        strategy: 'oauth_google',
-        redirectUrl: 'https://www.slnko.me/sso-callback?native=true',
-        actionCompleteRedirectUrl: 'slinkto://auth-complete',
+      const { Browser } = await import('@capacitor/browser');
+      // Open Clerk's Account Portal directly in Chrome Custom Tabs.
+      // The entire OAuth flow (including state management) runs inside Chrome,
+      // so there is no WebView sessionStorage mismatch.
+      const redirectUrl = encodeURIComponent('https://www.slnko.me/native-callback');
+      await Browser.open({
+        url: `https://accounts.slnko.me/sign-in?redirect_url=${redirectUrl}`,
       });
-      const url = result.firstFactorVerification.externalVerificationRedirectURL;
-      if (url) {
-        const { Browser } = await import('@capacitor/browser');
-        await Browser.open({ url: url.toString() });
-      }
     } catch (err) {
-      console.error('Google sign-in error:', err);
+      console.error('Sign-in error:', err);
     }
   }
 
