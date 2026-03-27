@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <rect width="1024" height="1024" rx="200" fill="#111111"/>
+  <defs>
+    <!--
+      Clip top half (y < 0) : L1 passe devant L2 ici
+      Clip bot half (y > 0) : L1 passe derrière L2 ici
+    -->
+    <clipPath id="clip-top">
+      <rect x="-320" y="-320" width="640" height="320"/>
+    </clipPath>
+    <clipPath id="clip-bot">
+      <rect x="-320" y="0"    width="640" height="320"/>
+    </clipPath>
+  </defs>
+
+  <!--
+    Deux maillons stadium (pill) — même orientation —
+    mais décalés EN X afin que seuls leurs ARRONDIS se croisent au centre.
+
+    L1 (haut-gauche) : centre local (-95, -57)
+      → arrondi droit arrive au centre de l'icône
+    L2 (bas-droite)  : centre local (+95, +57)
+      → arrondi gauche arrive au centre de l'icône
+
+    Le croisement se produit entre les deux arrondis, comme un vrai maillon.
+  -->
+  <g transform="translate(512,512) rotate(-45)">
+
+    <!-- 1. Moitié basse de L1 (passe DERRIÈRE L2) -->
+    <rect x="-285" y="-152" width="380" height="190" rx="95" ry="95"
+          fill="none" stroke="#E53935" stroke-width="68"
+          clip-path="url(#clip-bot)"/>
+
+    <!-- 2. L2 complet (maillon bas-droite) -->
+    <rect x="-95"  y="-38"  width="380" height="190" rx="95" ry="95"
+          fill="none" stroke="#E53935" stroke-width="68"/>
+
+    <!-- 3. Moitié haute de L1 (passe DEVANT L2) -->
+    <rect x="-285" y="-152" width="380" height="190" rx="95" ry="95"
+          fill="none" stroke="#E53935" stroke-width="68"
+          clip-path="url(#clip-top)"/>
+
+  </g>
+</svg>
